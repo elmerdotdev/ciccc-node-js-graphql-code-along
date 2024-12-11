@@ -1,0 +1,72 @@
+import { ApolloServer } from "@apollo/server";
+import { startStandaloneServer } from '@apollo/server/standalone'
+
+// Sample data
+const users = [
+  { id: "1", firstname: "John", lastname: "Smith", age: 30 },
+  { id: "2", firstname: "Jane", lastname: "Doe", age: 40 },
+  { id: "3", firstname: "Joe", lastname: "Moe", age: 35 },
+]
+
+const todos = [
+  { id: "1", userId: "2", text: "Water garden", completed: false },
+  { id: "2", userId: "3", text: "Mop floor", completed: false },
+  { id: "3", userId: "1", text: "Wash dishes", completed: false },
+  { id: "4", userId: "1", text: "Clean oven", completed: false }
+]
+
+// Schema Data Language (SDL)
+const typeDefs = `#graphql
+  type User {
+    id: ID!,
+    firstname: String,
+    lastname: String,
+    age: Int,
+    todos: [Todo]
+  }
+
+  type Todo {
+    id: ID!,
+    user: User,
+    text: String,
+    completed: Boolean
+  }
+
+  type Query {
+    users: [User],
+    todos: [Todo],
+    userById(userId: ID!): User
+  }
+`
+
+// Resolvers
+const resolvers = {
+  Query: {
+    users: () => users,
+    todos: () => todos,
+    userById: (_: unknown, { userId } : { userId: string }) => 
+      users.find(user => user.id === userId)
+  },
+  User: {
+    todos: (parent: { id: string }) =>
+      todos.filter(todo => todo.userId === parent.id)
+  },
+  Todo: {
+    user: (parent: { userId: string }) =>
+      users.find(user => user.id === parent.userId)
+  }
+}
+
+// Create Apollo Server
+const server = new ApolloServer({
+  typeDefs,
+  resolvers
+})
+
+// Start Apollo Server
+const startServer = async () => {
+  const { url } = await startStandaloneServer(server)
+  console.log(`Server is running on ${url}...`)
+}
+
+startServer()
